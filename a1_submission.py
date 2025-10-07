@@ -131,30 +131,48 @@ class Device(Vertex):
             name (str): The label or identifier of the device.
         """
         self.name = name
+        self.children = {}
+        self.network = Graph([self])
 
     def discover_network(self, find_devices_fn: Callable[[List[str]], List[Tuple[str, str, float]]]) -> None:
         """
-        Discovers the surrounding network starting from this device. Once this 
-        function is called, self.network should contain a representation of the 
+        Discovers the surrounding network starting from this device. Once this
+        function is called, self.network should contain a representation of the
         device's discovered network.
 
         Args:
-            find_devices_fn (Callable[[List[str]], List[Tuple[str, str, float]]]): 
-                A function that takes an ordered list of device names (i.e., a path) 
+            find_devices_fn (Callable[[List[str]], List[Tuple[str, str, float]]]):
+                A function that takes an ordered list of device names (i.e., a path)
                 and returns the edges from the last device in the path to its immediate children.
         """
-        
+
+        visited = []
+        edges = []
+        to_visit = [self.name]
+        while len(to_visit) > 0:
+            current = to_visit[-1]
+            edges = find_devices_fn([current])
+            to_visit.pop()
+            visited.append(current)
+            vertex_kids = {}
+            for edge in edges:
+                if edge[1] not in visited:
+                    to_visit.append(edge[1])
+                    vertex_kids[edge[1]] = (current, edge[1], edge[2])
+            vertex = Vertex(current, vertex_kids)
+            self.network.vertices.append(vertex)
+
 
     def find_path(self, d_name: str) -> Optional[List[str]]:
         """
-        Finds the cheapest path from this device to the specified target device 
+        Finds the cheapest path from this device to the specified target device
         using the Cheapest-First Search (CFS) algorithm.
 
         Args:
             d_name (str): The name of the destination device.
 
         Returns:
-            Optional[List[str]]: An ordered list of device names representing the path 
+            Optional[List[str]]: An ordered list of device names representing the path
             from this device to the target. If no path exists, returns None.
         """
         pass

@@ -110,8 +110,106 @@ class Graph:
                     if kid[1] == v_name:
                         return kid
 
+class Device(Vertex):
+    """
+    Represents a network device, extending the Vertex class with
+    device-specific functionality.
+
+    Attributes:
+        name (str): The label or identifier of the device.
+        children (Dict[str, Tuple[str, str, float]]):
+            A mapping between child device names and nearby devices.
+        network (Graph): A graph representing this device's discovered network.
+    """
+
+    def __init__(self, name: str):
+        """
+        Initializes a Device.
+
+        Args:
+            name (str): The label or identifier of the device.
+        """
+        self.name = name
+        self.children = {}
+        self.network = Graph([self])
+
+    def discover_network(self, find_devices_fn: Callable[[List[str]], List[Tuple[str, str, float]]]) -> None:
+        """
+        Discovers the surrounding network starting from this device. Once this
+        function is called, self.network should contain a representation of the
+        device's discovered network.
+
+        Args:
+            find_devices_fn (Callable[[List[str]], List[Tuple[str, str, float]]]):
+                A function that takes an ordered list of device names (i.e., a path)
+                and returns the edges from the last device in the path to its immediate children.
+        """
+
+        visited = []
+        edges = []
+        to_visit = [self.name]
+        while len(to_visit) > 0:
+            current = to_visit[-1]
+            print("Now Visiting")
+            print(current)
+            edges = find_devices_fn([current])
+            print(edges)
+            to_visit.pop()
+            visited.append(current)
+            vertex_kids = {}
+            for edge in edges:
+                if edge[1] not in visited:
+                    to_visit.append(edge[1])
+                    vertex_kids[edge[1]] = (current, edge[1], edge[2])
+            vertex = Vertex(current, vertex_kids)
+            self.network.vertices.append(vertex)
+            print("Visited")
+            print(visited)
+            print("To Visit")
+            print(to_visit)
+            print("\n")
+
+
+# ----------------------------------------------------------------------
+# Mock function for testing
+# ----------------------------------------------------------------------
+def find_devices_fn(path: List[str]) -> List[Tuple[str, str, float]]:
+    """
+    A mock function that simulates network discovery.
+
+    Args:
+        path (List[str]): The sequence of device names representing the discovery path.
+
+    Returns:
+        List[Tuple[str, str, float]]: A list of edges, where each tuple contains:
+            - source device name (str),
+            - child device name (str),
+            - edge weight (float).
+    """
+    if not path:
+        return []
+
+    last_device = path[-1]
+
+    mock_network = {
+        "chandra-s25": [
+            ("chandra-s25", "router-051797", 1.0),
+            ("chandra-s25", "helen-pc", 2.0),
+        ],
+        "router-051797": [
+            ("router-051797", "ws-102", 1.2),
+            ("router-051797", "switch-12", 0.8),
+            ("router-051797", "srv-07", 1.0),
+        ],
+        "helen-pc": [
+            ("helen-pc", "ws-14", 1.5),
+        ],
+    }
+
+    return mock_network.get(last_device, [])
+
 def main():
-    v1_dict = {
+    '''v1_dict = {
         "A": ("S", "A", 4),
         "B": ("S", "B", 8),
     }
@@ -128,7 +226,10 @@ def main():
     print(Graph1.is_child("A", "S"))
     print(Graph1.get_edge("S", "A"))
     print(Graph1.get_edge("A", "S"))
-    print(Graph1.get_edge("A", "C"))
+    print(Graph1.get_edge("A", "C"))'''
+    dev = Device("chandra-s25")
+    dev.discover_network(find_devices_fn)
+
 
 
 if __name__ == "__main__":
