@@ -99,7 +99,7 @@ class Graph:
             Optional[Tuple[str, str, float]]: The edge if it exists,
             or None if no such edge is found.
         """
-        if self.is_child == False:
+        if not self.is_child(u_name, v_name):
             return None
         kids = []
         for i in range(len(self.vertices)):
@@ -164,18 +164,35 @@ class Device(Vertex):
 
 
     def find_path(self, d_name: str) -> Optional[List[str]]:
-        """
-        Finds the cheapest path from this device to the specified target device
-        using the Cheapest-First Search (CFS) algorithm.
+        closed = []
+        open_list = [([self.name], 0.0)]
 
-        Args:
-            d_name (str): The name of the destination device.
+        while open_list:
+            least_path = open_list[0]
+            least_cost = least_path[1]
+            for path, cost in open_list:
+                if cost < least_cost:
+                    least_path = (path, cost)
+                    least_cost = cost
 
-        Returns:
-            Optional[List[str]]: An ordered list of device names representing the path
-            from this device to the target. If no path exists, returns None.
-        """
-        pass
+            open_list.remove(least_path)
+            current_path, current_cost = least_path
+            last_device = current_path[-1]
+
+            if last_device in closed:
+                continue
+            closed.append(last_device)
+
+            if last_device == d_name:
+                return current_path
+
+            edges = find_devices_fn(current_path)
+            for _, dest, weight in edges:
+                new_path = current_path + [dest]
+                new_cost = current_cost + weight
+                open_list.append((new_path, new_cost))
+
+        return None
 
 
 # ----------------------------------------------------------------------

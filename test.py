@@ -99,7 +99,7 @@ class Graph:
             Optional[Tuple[str, str, float]]: The edge if it exists,
             or None if no such edge is found.
         """
-        if self.is_child == False:
+        if not self.is_child(u_name, v_name):
             return None
         kids = []
         for i in range(len(self.vertices)):
@@ -169,6 +169,36 @@ class Device(Vertex):
             print(to_visit)
             print("\n")
 
+    def find_path(self, d_name: str) -> Optional[List[str]]:
+        closed = []
+        open_list = [([self.name], 0.0)]
+
+        while open_list:
+            least_path = open_list[0]
+            least_cost = least_path[1]
+            for path, cost in open_list:
+                if cost < least_cost:
+                    least_path = (path, cost)
+                    least_cost = cost
+
+            open_list.remove(least_path)
+            current_path, current_cost = least_path
+            last_device = current_path[-1]
+
+            if last_device in closed:
+                continue
+            closed.append(last_device)
+
+            if last_device == d_name:
+                return current_path
+
+            edges = find_devices_fn(current_path)
+            for _, dest, weight in edges:
+                new_path = current_path + [dest]
+                new_cost = current_cost + weight
+                open_list.append((new_path, new_cost))
+
+        return None
 
 # ----------------------------------------------------------------------
 # Mock function for testing
@@ -192,43 +222,36 @@ def find_devices_fn(path: List[str]) -> List[Tuple[str, str, float]]:
     last_device = path[-1]
 
     mock_network = {
-        "chandra-s25": [
-            ("chandra-s25", "router-051797", 1.0),
-            ("chandra-s25", "helen-pc", 2.0),
+        "a": [
+            ("a", "d", 2.0),
+            ("a", "e", 3.0),
+            ("a", "b", 3.0),
         ],
-        "router-051797": [
-            ("router-051797", "ws-102", 1.2),
-            ("router-051797", "switch-12", 0.8),
-            ("router-051797", "srv-07", 1.0),
+        "b": [
+            ("b", "f", 7.0),
+            ("b", "e", 5.0),
+            ("b", "c", 2.0),
         ],
-        "helen-pc": [
-            ("helen-pc", "ws-14", 1.5),
+        "c": [
+            ("c", "f", 4.0),
+        ],
+        "d": [
+            ("d", "e", 4.0),
+        ],
+        "e": [
+            ("e", "f", 3.0),
         ],
     }
 
     return mock_network.get(last_device, [])
 
 def main():
-    '''v1_dict = {
-        "A": ("S", "A", 4),
-        "B": ("S", "B", 8),
-    }
-    v1 = Vertex("S", v1_dict)
-    v2_dict = {
-        "B": ("A", "B", 11),
-        "C": ("A", "C", 8),
-    }
-    v2 = Vertex("A", v2_dict)
-    print(v1.get_children())
-    Graph1 = Graph([v1, v2])
-    print(Graph1.get_vertices())
-    print(Graph1.is_child("A", "B"))
-    print(Graph1.is_child("A", "S"))
-    print(Graph1.get_edge("S", "A"))
-    print(Graph1.get_edge("A", "S"))
-    print(Graph1.get_edge("A", "C"))'''
-    dev = Device("chandra-s25")
-    dev.discover_network(find_devices_fn)
+    dev = Device("a")
+    # 1️⃣ Basic direct connection
+    device_a = Device("a")
+    print("Test 1:", device_a.find_path("b"))
+    device_a.discover_network(find_devices_fn)
+    print(device_a.network.get_edge("a", "f"))
 
 
 
